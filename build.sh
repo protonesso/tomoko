@@ -9,6 +9,7 @@ main() {
 
 	export LANG=C
 	export LC_ALL=C
+	export STUFF="$PWD/stuff"
 	export BUILD="$PWD/build"
 	export SRCDIR="$BUILD/src"
 	export TOOLS="$BUILD/tools"
@@ -24,6 +25,10 @@ main() {
 		bsdtar -xvf $i-$LLVMVER.src.tar.xz
 	done
 
+	pushd "$SRCDIR/libcxx-$LLVMVER.src"
+		patch -Np1 -i "$STUFF"/libcxx-01-musl-hardfix.patch
+	popd
+
 	curl -C - -L -O https://musl.libc.org/releases/musl-$MUSLVER.tar.gz
 	bsdtar -xvf musl-$MUSLVER.tar.gz
 
@@ -33,6 +38,9 @@ main() {
 	cp -av "$SRCDIR"/lld-$LLVMVER.src tools/lld
 	cp -av "$SRCDIR"/compiler-rt-$LLVMVER.src projects/compiler-rt
 	cp -av "$SRCDIR"/libunwind-$LLVMVER.src projects/libunwind
+	cp -av "$SRCDIR"/libcxx-$LLVMVER.src projects/libcxx
+	cp -av "$SRCDIR"/libcxxabi-$LLVMVER.src projects/libcxxabi
+	cp -av "$SRCDIR"/openmp-$LLVMVER.src projects/openmp
 	mkdir -p build
 	cd build
 	cmake "$SRCDIR/llvm-$LLVMVER.src" \
@@ -41,6 +49,7 @@ main() {
 		-DCMAKE_INSTALL_PREFIX="$TOOLS" \
 		-DCMAKE_BUILD_TYPE=MinSizeRel \
 		-DCLANG_BUILD_EXAMPLES=OFF \
+		-DCLANG_DEFAULT_CXX_STDLIB=libc++ \
 		-DCLANG_DEFAULT_LINKER=lld \
 		-DCLANG_DEFAULT_RTLIB=compiler-rt \
 		-DCLANG_DEFAULT_UNWINDLIB=libunwind \
@@ -52,6 +61,10 @@ main() {
 		-DCOMPILER_RT_BUILD_PROFILE=OFF \
 		-DCOMPILER_RT_BUILD_SANITIZERS=OFF \
 		-DCOMPILER_RT_BUILD_XRAY=OFF \
+		-DLIBCXX_CXX_ABI=libcxxabi \
+		-DLIBCXX_USE_COMPILER_RT=ON \
+		-DLIBCXXABI_USE_LLVM_UNWINDER=ON \
+		-DLIBCXXABI_USE_COMPILER_RT=ON \
 		-DLIBUNWIND_USE_COMPILER_RT=ON \
 		-DLLVM_BUILD_EXAMPLES=OFF \
 		-DLLVM_BUILD_DOCS=OFF \
@@ -91,7 +104,7 @@ main() {
 	make ARCH=mips prefix=/usr DESTDIR="$SYSROOT" install-headers
 
 	cd "$SRCDIR"
-	mkdir compiler-rt-builtins-build
+	mkdir -p compiler-rt-builtins-build
 	cd compiler-rt-builtins-build
 	cmake ../compiler-rt-$LLVMVER.src \
 		-DCMAKE_C_COMPILER_TARGET="mipsel-linux-musl" \
@@ -110,6 +123,7 @@ main() {
 		-DCOMPILER_RT_INCLUDE_TESTS=OFF \
 		-Wno-dev -G Ninja
 	ninja
+
 	for i in lib/linux/*; do
 		install -Dm644 "$i" "$TOOLS"/lib/clang/$LLVMVER/lib/linux/$(basename $i)
 	done
@@ -126,6 +140,29 @@ main() {
 		LIBCC="$(mipsel-linux-musl-clang -print-libgcc-file-name)"
 	make -j9
 	make DESTDIR="$SYSROOT" install -j9
+
+	touch "$SYSROOT"/usr/lib/crt{begin,end}S.o
+
+	cd "$SRCDIR"/libunwind-$LLVMVER.src
+	mkdir -p build
+	cd build
+	cmake "$SRCDIR/libunwind-$LLVMVER.src" \
+		-DCMAKE_INSTALL_PREFIX=/usr \
+		-DCMAKE_BUILD_TYPE=MinSizeRel \
+		-DCMAKE_C_COMPILER_TARGET="mipsel-linux-musl" \
+		-DCMAKE_ASM_COMPILER_TARGET="mipsel-linux-musl" \
+		-DCMAKE_C_COMPILER="$TOOLS/bin/mipsel-linux-musl-clang" \
+		-DCMAKE_CXX_COMPILER="$TOOLS/bin/mipsel-linux-musl-clang++" \
+		-DCMAKE_AR="$TOOLS/bin/mipsel-linux-musl-ar" \
+		-DCMAKE_NM="$TOOLS/bin/mipsel-linux-musl-nm" \
+		-DCMAKE_RANLIB="$TOOLS/bin/mipsel-linux-musl-ranlib" \
+		-DCMAKE_TRY_COMPILE_TARGET_TYPE=STATIC_LIBRARY \
+		-DLLVM_CONFIG_PATH="$TOOLS/bin/llvm-config" \
+		-DLIBUNWIND_USE_COMPILER_RT=ON \
+		-DLIBUNWIND_TARGET_TRIPLE="mipsel-linux-musl" \
+		-Wno-dev -G Ninja
+	ninja
+	DESTDIR="$SYSROOT" ninja install
 }
 
 main
