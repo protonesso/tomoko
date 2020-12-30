@@ -92,12 +92,6 @@ main() {
 			export MARCH="powerpc64"
 			export KARCH="powerpc"
 			;;
-		powerpc)
-			export XTARGET="powerpc-linux-musl"
-			export LTARGET="PowerPC"
-			export MARCH="powerpc"
-			export KARCH="powerpc"
-			;;
 		riscv64)
 			export XTARGET="riscv64-linux-musl"
 			export LTARGET="RISCV"
@@ -184,7 +178,6 @@ main() {
 		-DCOMPILER_RT_BUILD_SANITIZERS=OFF \
 		-DCOMPILER_RT_BUILD_XRAY=OFF \
 		-DLIBCXX_CXX_ABI=libcxxabi \
-		-DLIBCXX_ENABLE_STATIC_ABI_LIBRARY=ON \
 		-DLIBCXX_USE_COMPILER_RT=ON \
 		-DLIBCXXABI_USE_LLVM_UNWINDER=ON \
 		-DLIBCXXABI_USE_COMPILER_RT=ON \
@@ -192,8 +185,8 @@ main() {
 		-DLLVM_BUILD_EXAMPLES=OFF \
 		-DLLVM_BUILD_DOCS=OFF \
 		-DLLVM_BUILD_TESTS=OFF \
-		-DLLVM_TARGETS_TO_BUILD=$LTARGET \
 		-DLLVM_DEFAULT_TARGET_TRIPLE=$XTARGET \
+		-DLLVM_TARGETS_TO_BUILD=$LTARGET \
 		-DDEFAULT_SYSROOT="$SYSROOT" \
 		-Wno-dev -G Ninja
 	ninja -j$(nproc)
@@ -299,9 +292,9 @@ main() {
 		-DLLVM_BUILD_EXAMPLES=OFF \
 		-DLLVM_BUILD_DOCS=OFF \
 		-DLLVM_BUILD_TESTS=OFF \
+		-DLLVM_DEFAULT_TARGET_TRIPLE=$XTARGET \
 		-DLLVM_ENABLE_PROJECTS="libunwind;libcxx;libcxxabi" \
 		-DLLVM_TARGETS_TO_BUILD=$LTARGET \
-		-DLLVM_DEFAULT_TARGET_TRIPLE=$XTARGET \
 		-Wno-dev -G Ninja
 
 	sed -i 's/-latomic//g' build.ninja
