@@ -111,7 +111,7 @@ main() {
 	curl -C - -L --retry 3 --retry-delay 3 -O https://cdn.kernel.org/pub/linux/kernel/v5.x/linux-$LINUXVER.tar.xz
 	bsdtar -xvf linux-$LINUXVER.tar.xz
 
-	for i in llvm clang clang-tools-extra lld compiler-rt libunwind libcxx libcxxabi openmp; do
+	for i in llvm clang clang-tools-extra lld compiler-rt libunwind libcxx libcxxabi; do
 		curl -C - -L --retry 3 --retry-delay 3 -O https://github.com/llvm/llvm-project/releases/download/llvmorg-$LLVMVER/$i-$LLVMVER.src.tar.xz
 		bsdtar -xvf $i-$LLVMVER.src.tar.xz
 	done
@@ -154,7 +154,6 @@ main() {
 	cp -av "$SRCDIR"/libunwind-$LLVMVER.src projects/libunwind
 	cp -av "$SRCDIR"/libcxx-$LLVMVER.src projects/libcxx
 	cp -av "$SRCDIR"/libcxxabi-$LLVMVER.src projects/libcxxabi
-	cp -av "$SRCDIR"/openmp-$LLVMVER.src projects/openmp
 	mkdir -p build
 	cd build
 	cmake "$SRCDIR/llvm-$LLVMVER.src" \
@@ -165,7 +164,6 @@ main() {
 		-DCLANG_BUILD_EXAMPLES=OFF \
 		-DCLANG_DEFAULT_CXX_STDLIB=libc++ \
 		-DCLANG_DEFAULT_LINKER=lld \
-		-DCLANG_DEFAULT_OPENMP_RUNTIME=libomp \
 		-DCLANG_DEFAULT_RTLIB=compiler-rt \
 		-DCLANG_DEFAULT_UNWINDLIB=libunwind \
 		-DCLANG_INCLUDE_DOCS=OFF \
