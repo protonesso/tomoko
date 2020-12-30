@@ -77,6 +77,7 @@ main() {
 		mipsel)
 			export XTARGET="mipsel-linux-musl"
 			export LTARGET="Mips"
+			export LARCH="mips"
 			export MARCH="mips"
 			export KARCH="mips"
 			;;
@@ -122,6 +123,9 @@ main() {
 	pushd "$SRCDIR/clang-$LLVMVER.src"
 		patch -Np1 -i "$STUFF"/clang/0001-add-support-for-Ataraxia-Linux.patch
 		patch -Np1 -i "$STUFF"/clang/0002-PowerPC64-ELFv2-fixes.patch
+	popd
+	pushd "$SRCDIR/compiler-rt-$LLVMVER.src"
+		patch -Np1 -i "$STUFF"/compiler-rt/0001-port-crt-on-MIPS-build-on-PowerPC.patch
 	popd
 	pushd "$SRCDIR/libcxx-$LLVMVER.src"
 		patch -Np1 -i "$STUFF"/libcxx/libcxx-01-musl-hardfix.patch
@@ -176,6 +180,7 @@ main() {
 		-DCOMPILER_RT_BUILD_SANITIZERS=OFF \
 		-DCOMPILER_RT_BUILD_XRAY=OFF \
 		-DLIBCXX_CXX_ABI=libcxxabi \
+		-DLIBCXX_ENABLE_STATIC_ABI_LIBRARY=ON \
 		-DLIBCXX_USE_COMPILER_RT=ON \
 		-DLIBCXXABI_USE_LLVM_UNWINDER=ON \
 		-DLIBCXXABI_USE_COMPILER_RT=ON \
@@ -255,8 +260,6 @@ main() {
 		LIBCC="$($XTARGET-clang -print-libgcc-file-name)"
 	make -j$(nproc)
 	make DESTDIR="$SYSROOT" install -j$(nproc)
-
-	touch "$SYSROOT"/usr/lib/crt{begin,end}{,T,S}.o
 
 	pushd "$SRCDIR"
 		for i in libunwind libcxx libcxxabi; do
