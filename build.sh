@@ -23,84 +23,84 @@ main() {
 		x86_64)
 			export XTARGET="x86_64-linux-musl"
 			export LTARGET="X86"
-			export LARCH="x86_64"
 			export MARCH="x86_64"
 			export KARCH="x86_64"
 			;;
 		i386)
 			export XTARGET="i686-linux-musl"
 			export LTARGET="X86"
-			export LARCH="x86"
 			export MARCH="i386"
 			export KARCH="i386"
 			;;
 		aarch64)
 			export XTARGET="aarch64-linux-musl"
 			export LTARGET="Aarch64"
-			export LARCH="aarch64"
 			export MARCH="aarch64"
 			export KARCH="arm64"
 			;;
 		armv7l)
 			export XTARGET="armv7a-linux-musleabihf"
 			export LTARGET="ARM"
-			export LARCH="arm"
 			export MARCH="arm"
 			export KARCH="arm"
 			;;
 		armv6l)
 			export XTARGET="armv6a-linux-musleabihf"
 			export LTARGET="ARM"
-			export LARCH="arm"
 			export MARCH="arm"
 			export KARCH="arm"
 			;;
 		armv5te)
 			export XTARGET="armv5te-linux-musleabi"
 			export LTARGET="ARM"
-			export LARCH="arm"
 			export MARCH="arm"
 			export KARCH="arm"
 			;;
 		mips64)
 			export XTARGET="mips64-linux-musl"
 			export LTARGET="Mips"
-			export LARCH="mips64"
 			export MARCH="mips64"
 			export KARCH="mips"
 			;;
 		mips64el)
 			export XTARGET="mips64el-linux-musl"
 			export LTARGET="Mips"
-			export LARCH="mips64el"
 			export MARCH="mips64"
 			export KARCH="mips"
 			;;
 		mips)
 			export XTARGET="mips-linux-musl"
 			export LTARGET="Mips"
-			export LARCH="mips"
 			export MARCH="mips"
 			export KARCH="mips"
 			;;
 		mipsel)
 			export XTARGET="mipsel-linux-musl"
 			export LTARGET="Mips"
-			export LARCH="mipsel"
 			export MARCH="mips"
 			export KARCH="mips"
 			;;
-		s390x)
-			export XTARGET="s390x-linux-musl"
-			export LTARGET="SystemZ"
-			export LARCH="s390x"
-			export MARCH="s390x"
-			export KARCH="s390"
+		powerpc64le)
+			export XTARGET="powerpc64le-linux-musl"
+			export LTARGET="PowerPC"
+			export MARCH="powerpc64"
+			export KARCH="powerpc"
+			;;
+		powerpc64)
+			export XTARGET="powerpc64-linux-musl"
+			export LTARGET="PowerPC"
+			export MARCH="powerpc64"
+			export KARCH="powerpc"
+			;;
+		powerpc)
+			export XTARGET="powerpc-linux-musl"
+			export LTARGET="PowerPC"
+			export MARCH="powerpc"
+			export KARCH="powerpc"
 			;;
 		riscv64)
 			export XTARGET="riscv64-linux-musl"
 			export LTARGET="RISCV"
-			export LARCH="riscv64"
 			export MARCH="riscv64"
 			export KARCH="riscv"
 			;;
@@ -114,23 +114,30 @@ main() {
 	mkdir -pv "$SRCDIR" "$TOOLS" "$SYSROOT"
 
 	cd "$SRCDIR"
+	curl -C - -L --retry 3 --retry-delay 3 -O https://cdn.kernel.org/pub/linux/kernel/v5.x/linux-$LINUXVER.tar.xz
+	bsdtar -xvf linux-$LINUXVER.tar.xz
+
 	for i in llvm clang clang-tools-extra lld compiler-rt libunwind libcxx libcxxabi openmp; do
-		curl -C - -L -O https://github.com/llvm/llvm-project/releases/download/llvmorg-$LLVMVER/$i-$LLVMVER.src.tar.xz
+		curl -C - -L --retry 3 --retry-delay 3 -O https://github.com/llvm/llvm-project/releases/download/llvmorg-$LLVMVER/$i-$LLVMVER.src.tar.xz
 		bsdtar -xvf $i-$LLVMVER.src.tar.xz
 	done
 
+	pushd "$SRCDIR/llvm-$LLVMVER.src"
+		patch -Np1 -i "$STUFF"/llvm/0001-PowerPC64-ELFv2-fixes.patch
+	popd
+	pushd "$SRCDIR/clang-$LLVMVER.src"
+		patch -Np1 -i "$STUFF"/clang/0001-PowerPC64-ELFv2-fixes.patch
+	popd
 	pushd "$SRCDIR/libcxx-$LLVMVER.src"
-		patch -Np1 -i "$STUFF"/libcxx-01-musl-hardfix.patch
+		patch -Np1 -i "$STUFF"/libcxx/libcxx-01-musl-hardfix.patch
 	popd
 	pushd "$SRCDIR/libcxxabi-$LLVMVER.src"
-		patch -Np1 -i "$STUFF"/libcxxabi_musl_exit.patch
+		patch -Np1 -i "$STUFF"/libcxxabi/libcxxabi_musl_exit.patch
 	popd
 
-	curl -C - -L -O https://musl.libc.org/releases/musl-$MUSLVER.tar.gz
+	curl -C - -L --retry 3 --retry-delay 3 -O https://musl.libc.org/releases/musl-$MUSLVER.tar.gz
 	bsdtar -xvf musl-$MUSLVER.tar.gz
 
-	curl -C - -L -O https://cdn.kernel.org/pub/linux/kernel/v5.x/linux-$LINUXVER.tar.xz
-	bsdtar -xvf linux-$LINUXVER.tar.xz
 
 	cd "$SRCDIR"/linux-$LINUXVER
 	make mrproper -j$(nproc)
@@ -159,22 +166,23 @@ main() {
 		-DCMAKE_C_COMPILER=clang \
 		-DCMAKE_CXX_COMPILER=clang++ \
 		-DCMAKE_INSTALL_PREFIX="$TOOLS" \
-		-DCMAKE_BUILD_TYPE=MinSizeRel \
+		-DCMAKE_BUILD_TYPE=Release \
 		-DCLANG_BUILD_EXAMPLES=OFF \
 		-DCLANG_DEFAULT_CXX_STDLIB=libc++ \
 		-DCLANG_DEFAULT_LINKER=lld \
+		-DCLANG_DEFAULT_OPENMP_RUNTIME=libomp \
 		-DCLANG_DEFAULT_RTLIB=compiler-rt \
 		-DCLANG_DEFAULT_UNWINDLIB=libunwind \
 		-DCLANG_INCLUDE_DOCS=OFF \
 		-DCLANG_INCLUDE_TESTS=OFF \
 		-DCLANG_PLUGIN_SUPPORT=ON \
+		-DCLANG_VENDOR=Ataraxia \
 		-DCOMPILER_RT_BUILD_BUILTINS=ON \
 		-DCOMPILER_RT_BUILD_LIBFUZZER=OFF \
 		-DCOMPILER_RT_BUILD_PROFILE=OFF \
 		-DCOMPILER_RT_BUILD_SANITIZERS=OFF \
 		-DCOMPILER_RT_BUILD_XRAY=OFF \
 		-DLIBCXX_CXX_ABI=libcxxabi \
-		-DLIBCXX_INCLUDE_TESTS=OFF \
 		-DLIBCXX_USE_COMPILER_RT=ON \
 		-DLIBCXXABI_USE_LLVM_UNWINDER=ON \
 		-DLIBCXXABI_USE_COMPILER_RT=ON \
@@ -182,7 +190,6 @@ main() {
 		-DLLVM_BUILD_EXAMPLES=OFF \
 		-DLLVM_BUILD_DOCS=OFF \
 		-DLLVM_BUILD_TESTS=OFF \
-		-DLLVM_TARGET_ARCH=$LARCH \
 		-DLLVM_TARGETS_TO_BUILD=$LTARGET \
 		-DLLVM_DEFAULT_TARGET_TRIPLE=$XTARGET \
 		-DDEFAULT_SYSROOT="$SYSROOT" \
@@ -256,8 +263,10 @@ main() {
 	make -j$(nproc)
 	make DESTDIR="$SYSROOT" install -j$(nproc)
 
+	touch "$SYSROOT"/usr/lib/crt{begin,end}{,T,S}.o
+
 	pushd "$SRCDIR"
-		for i in libunwind libcxx libcxxabi openmp; do
+		for i in libunwind libcxx libcxxabi; do
 			ln -svf $i-$LLVMVER.src $i
 		done
 	popd
@@ -269,7 +278,7 @@ main() {
 	cmake "$SRCDIR/llvm-$LLVMVER.src" \
 		-DCMAKE_CROSSCOMPILING=ON \
 		-DCMAKE_INSTALL_PREFIX=/usr \
-		-DCMAKE_BUILD_TYPE=MinSizeRel \
+		-DCMAKE_BUILD_TYPE=Release \
 		-DCMAKE_C_COMPILER_TARGET="$XTARGET" \
 		-DCMAKE_ASM_COMPILER_TARGET="$XTARGET" \
 		-DCMAKE_C_COMPILER="$TOOLS/bin/$XTARGET-clang" \
@@ -280,14 +289,10 @@ main() {
 		-DLLVM_CONFIG_PATH="$TOOLS/bin/llvm-config" \
 		-DLIBCXX_CXX_ABI=libcxxabi \
 		-DLIBCXX_HAS_MUSL_LIBC=ON \
-		-DLIBCXX_INCLUDE_TESTS=OFF \
 		-DLIBCXX_USE_COMPILER_RT=ON \
-		-DLIBCXX_TARGET_TRIPLE=$XTARGET \
 		-DLIBCXXABI_USE_LLVM_UNWINDER=ON \
 		-DLIBCXXABI_USE_COMPILER_RT=ON \
-		-DLIBCXXABI_TARGET_TRIPLE=$XTARGET \
 		-DLIBUNWIND_USE_COMPILER_RT=ON \
-		-DLIBUNWIND_TARGET_TRIPLE=$XTARGET \
 		-DLLVM_BUILD_EXAMPLES=OFF \
 		-DLLVM_BUILD_DOCS=OFF \
 		-DLLVM_BUILD_TESTS=OFF \
