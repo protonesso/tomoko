@@ -1,7 +1,7 @@
 From b23941b392cd7f9560fccc11a6e905eb9ac9e5ef Mon Sep 17 00:00:00 2001
 From: Ishimoto Shinobu <nagakamira@gmail.com>
 Date: Thu, 31 Dec 2020 01:44:05 +0900
-Subject: [PATCH] PowerPC64 ELFv2 fixes
+Subject: [PATCH 2/2] PowerPC64 ELFv2 fixes
 
 Signed-off-by: Ishimoto Shinobu <nagakamira@gmail.com>
 ---

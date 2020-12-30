@@ -126,7 +126,8 @@ main() {
 		patch -Np1 -i "$STUFF"/llvm/0001-PowerPC64-ELFv2-fixes.patch
 	popd
 	pushd "$SRCDIR/clang-$LLVMVER.src"
-		patch -Np1 -i "$STUFF"/clang/0001-PowerPC64-ELFv2-fixes.patch
+		patch -Np1 -i "$STUFF"/clang/0001-add-support-for-Ataraxia-Linux.patch
+		patch -Np1 -i "$STUFF"/clang/0002-PowerPC64-ELFv2-fixes.patch
 	popd
 	pushd "$SRCDIR/libcxx-$LLVMVER.src"
 		patch -Np1 -i "$STUFF"/libcxx/libcxx-01-musl-hardfix.patch
