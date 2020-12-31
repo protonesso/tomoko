@@ -34,7 +34,7 @@ main() {
 			;;
 		aarch64)
 			export XTARGET="aarch64-linux-musl"
-			export LTARGET="Aarch64"
+			export LTARGET="AArch64"
 			export MARCH="aarch64"
 			export KARCH="arm64"
 			;;
@@ -124,6 +124,9 @@ main() {
 	pushd "$SRCDIR/clang-$LLVMVER.src"
 		patch -Np1 -i "$STUFF"/clang/0001-add-support-for-Ataraxia-Linux.patch
 		patch -Np1 -i "$STUFF"/clang/0002-PowerPC64-ELFv2-fixes.patch
+	popd
+	pushd "$SRCDIR/lld-$LLVMVER.src"
+		patch -Np1 -i "$STUFF"/lld/0001-RISCV-linker-relaxation-support.patch
 	popd
 	pushd "$SRCDIR/compiler-rt-$LLVMVER.src"
 		patch -Np1 -i "$STUFF"/compiler-rt/0001-port-crt-on-MIPS-build-on-PowerPC.patch
