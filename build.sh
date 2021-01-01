@@ -23,60 +23,70 @@ main() {
 		x86_64)
 			export XTARGET="x86_64-linux-musl"
 			export LTARGET="X86"
+			export LARCH="x86_64"
 			export MARCH="x86_64"
 			export KARCH="x86_64"
 			;;
 		i386)
 			export XTARGET="i686-linux-musl"
 			export LTARGET="X86"
+			export LARCH="x86"
 			export MARCH="i386"
 			export KARCH="i386"
 			;;
 		aarch64)
 			export XTARGET="aarch64-linux-musl"
 			export LTARGET="AArch64"
+			export LARCH="aarch64"
 			export MARCH="aarch64"
 			export KARCH="arm64"
 			;;
 		armv7l)
-			export XTARGET="armv7a-linux-musleabihf"
+			export XTARGET="armv7-linux-musleabihf"
 			export LTARGET="ARM"
+			export LARCH="armv7"
 			export MARCH="arm"
 			export KARCH="arm"
 			;;
 		armv6l)
-			export XTARGET="armv6a-linux-musleabihf"
+			export XTARGET="arm-linux-musleabihf"
 			export LTARGET="ARM"
+			export LARCH="armv6"
 			export MARCH="arm"
 			export KARCH="arm"
 			;;
 		armv5te)
-			export XTARGET="armv5te-linux-musleabi"
+			export XTARGET="arm-linux-musleabi"
 			export LTARGET="ARM"
+			export LARCH="armv5te"
 			export MARCH="arm"
 			export KARCH="arm"
 			;;
 		mips64)
 			export XTARGET="mips64-linux-musl"
 			export LTARGET="Mips"
+			export LARCH="mips64"
 			export MARCH="mips64"
 			export KARCH="mips"
 			;;
 		mips64el)
 			export XTARGET="mips64el-linux-musl"
 			export LTARGET="Mips"
+			export LARCH="mips64el"
 			export MARCH="mips64"
 			export KARCH="mips"
 			;;
 		mips)
 			export XTARGET="mips-linux-musl"
 			export LTARGET="Mips"
+			export LARCH="mips"
 			export MARCH="mips"
 			export KARCH="mips"
 			;;
 		mipsel)
 			export XTARGET="mipsel-linux-musl"
 			export LTARGET="Mips"
+			export LARCH="mipsel"
 			export LARCH="mips"
 			export MARCH="mips"
 			export KARCH="mips"
@@ -84,18 +94,21 @@ main() {
 		powerpc64le)
 			export XTARGET="powerpc64le-linux-musl"
 			export LTARGET="PowerPC"
+			export LARCH="powerpc64le"
 			export MARCH="powerpc64"
 			export KARCH="powerpc"
 			;;
 		powerpc64)
 			export XTARGET="powerpc64-linux-musl"
 			export LTARGET="PowerPC"
+			export LARCH="powerpc64"
 			export MARCH="powerpc64"
 			export KARCH="powerpc"
 			;;
 		riscv64)
 			export XTARGET="riscv64-linux-musl"
 			export LTARGET="RISCV"
+			export LARCH="riscv64"
 			export MARCH="riscv64"
 			export KARCH="riscv"
 			;;
@@ -193,6 +206,7 @@ main() {
 		-DLLVM_BUILD_DOCS=OFF \
 		-DLLVM_BUILD_TESTS=OFF \
 		-DLLVM_DEFAULT_TARGET_TRIPLE=$XTARGET \
+		-DLLVM_TARGET_ARCH=$LARCH \
 		-DLLVM_TARGETS_TO_BUILD=$LTARGET \
 		-DDEFAULT_SYSROOT="$SYSROOT" \
 		-Wno-dev -G Ninja
@@ -265,47 +279,26 @@ main() {
 	make -j$(nproc)
 	make DESTDIR="$SYSROOT" install -j$(nproc)
 
-	pushd "$SRCDIR"
-		for i in libunwind libcxx libcxxabi; do
-			ln -svf $i-$LLVMVER.src $i
-		done
-	popd
-
-	cd "$SRCDIR"/llvm-$LLVMVER.src
-	rm -rf build
+	cd "$SRCDIR"/libunwind-$LLVMVER.src
 	mkdir -p build
 	cd build
-	cmake "$SRCDIR/llvm-$LLVMVER.src" \
-		-DCMAKE_CROSSCOMPILING=ON \
+	cmake "$SRCDIR/libunwind-$LLVMVER.src" \
 		-DCMAKE_INSTALL_PREFIX=/usr \
-		-DCMAKE_BUILD_TYPE=Release \
+		-DCMAKE_BUILD_TYPE=MinSizeRel \
 		-DCMAKE_C_COMPILER_TARGET="$XTARGET" \
 		-DCMAKE_ASM_COMPILER_TARGET="$XTARGET" \
 		-DCMAKE_C_COMPILER="$TOOLS/bin/$XTARGET-clang" \
 		-DCMAKE_CXX_COMPILER="$TOOLS/bin/$XTARGET-clang++" \
 		-DCMAKE_AR="$TOOLS/bin/$XTARGET-ar" \
 		-DCMAKE_NM="$TOOLS/bin/$XTARGET-nm" \
+		-DCMAKE_RANLIB="$TOOLS/bin/$XTARGET-ranlib" \
 		-DCMAKE_TRY_COMPILE_TARGET_TYPE=STATIC_LIBRARY \
 		-DLLVM_CONFIG_PATH="$TOOLS/bin/llvm-config" \
-		-DLIBCXX_CXX_ABI=libcxxabi \
-		-DLIBCXX_ENABLE_STATIC_ABI_LIBRARY=ON \
-		-DLIBCXX_HAS_MUSL_LIBC=ON \
-		-DLIBCXX_USE_COMPILER_RT=ON \
-		-DLIBCXXABI_USE_LLVM_UNWINDER=ON \
-		-DLIBCXXABI_USE_COMPILER_RT=ON \
 		-DLIBUNWIND_USE_COMPILER_RT=ON \
-		-DLLVM_BUILD_EXAMPLES=OFF \
-		-DLLVM_BUILD_DOCS=OFF \
-		-DLLVM_BUILD_TESTS=OFF \
-		-DLLVM_DEFAULT_TARGET_TRIPLE=$XTARGET \
-		-DLLVM_ENABLE_PROJECTS="libunwind;libcxx;libcxxabi" \
-		-DLLVM_TARGETS_TO_BUILD=$LTARGET \
+		-DLIBUNWIND_TARGET_TRIPLE="$XTARGET" \
 		-Wno-dev -G Ninja
-
-	sed -i 's/-latomic//g' build.ninja
-
-	ninja unwind cxx -j$(nproc)
-	DESTDIR="$SYSROOT" ninja install-unwind install-cxxabi install-cxx -j$(nproc)
+	ninja
+	DESTDIR="$SYSROOT" ninja install
 }
 
 main "$1"
