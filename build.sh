@@ -28,9 +28,9 @@ main() {
 			export KARCH="x86_64"
 			;;
 		i386)
-			export XTARGET="i686-linux-musl"
+			export XTARGET="i386-linux-musl"
 			export LTARGET="X86"
-			export LARCH="x86"
+			export LARCH="i686"
 			export MARCH="i386"
 			export KARCH="i386"
 			;;
@@ -48,14 +48,14 @@ main() {
 			export MARCH="arm"
 			export KARCH="arm"
 			;;
-		armv6l)
-			export XTARGET="arm-linux-musleabihf"
+		armhf)
+			export XTARGET="armhf-linux-musleabihf"
 			export LTARGET="ARM"
 			export LARCH="armv6"
 			export MARCH="arm"
 			export KARCH="arm"
 			;;
-		armv5te)
+		arm)
 			export XTARGET="arm-linux-musleabi"
 			export LTARGET="ARM"
 			export LARCH="armv5te"
@@ -220,7 +220,7 @@ main() {
 			cp -v $realclang $XTARGET-$i
 		done
 
-		for i in ar as dwp nm objcopy objdump size strings; do
+		for i in ar dwp nm objcopy objdump size strings; do
 			cp -v llvm-$i $XTARGET-$i
 		done
 
@@ -284,7 +284,7 @@ main() {
 	cd build
 	cmake "$SRCDIR/libunwind-$LLVMVER.src" \
 		-DCMAKE_INSTALL_PREFIX=/usr \
-		-DCMAKE_BUILD_TYPE=MinSizeRel \
+		-DCMAKE_BUILD_TYPE=Release \
 		-DCMAKE_C_COMPILER_TARGET="$XTARGET" \
 		-DCMAKE_ASM_COMPILER_TARGET="$XTARGET" \
 		-DCMAKE_C_COMPILER="$TOOLS/bin/$XTARGET-clang" \
