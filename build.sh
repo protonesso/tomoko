@@ -103,8 +103,10 @@ main() {
 
 	export LANG=C
 	export LC_ALL=C
+
 	export HOSTCC=clang
 	export HOSTCXX=clang++
+
 	export STUFF="$PWD/stuff"
 	export BUILD="$PWD/build"
 	export SRCDIR="$BUILD/src"
@@ -212,12 +214,15 @@ main() {
 			cp -v $realclang $XTARGET-$i
 		done
 
-		for i in ar as dwp nm objcopy objdump size strings; do
+		for i in ar dwp nm objcopy objdump size strings; do
 			cp -v llvm-$i $XTARGET-$i
 		done
 
-		cp -v lld $XTARGET-ld
-		cp -v lld $XTARGET-ld.lld
+		if [ "$1" != "riscv64" ]; then
+			cp -v lld $XTARGET-ld
+			cp -v lld $XTARGET-ld.lld
+		fi
+
 		cp -v llvm-symbolizer $XTARGET-addr2line
 		cp -v llvm-cxxfilt $XTARGET-c++filt
 		cp -v llvm-cov $XTARGET-gcov
