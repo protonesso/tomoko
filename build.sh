@@ -133,11 +133,14 @@ main() {
 		patch -Np1 -i "$STUFF"/clang/0002-PowerPC64-ELFv2-fixes.patch
 		patch -Np1 -i "$STUFF"/clang/0003-Add-fortify-headers-paths.patch
 	popd
-	pushd "$SRCDIR/lld-$LLVMVER.src"
-		patch -Np1 -i "$STUFF"/lld/0001-RISCV-linker-relaxation-support.patch
-	popd
 	pushd "$SRCDIR/compiler-rt-$LLVMVER.src"
 		patch -Np1 -i "$STUFF"/compiler-rt/0001-port-crt-on-MIPS-build-on-PowerPC.patch
+	popd
+	pushd "$SRCDIR/libcxxabi-$LLVMVER.src"
+		patch -Np1 -i "$STUFF"/libcxxabi/musl.patch
+	popd
+	pushd "$SRCDIR/libcxx-$LLVMVER.src"
+		patch -Np1 -i "$STUFF"/libcxx/musl.patch
 	popd
 
 	curl -C - -L --retry 3 --retry-delay 3 -O https://musl.libc.org/releases/musl-$MUSLVER.tar.gz
@@ -269,10 +272,16 @@ main() {
 	make -j$(nproc)
 	make DESTDIR="$SYSROOT" install -j$(nproc)
 
-	cd "$SRCDIR"/libunwind-$LLVMVER.src
+	cd "$SRCDIR"
+	rm -rvf llvm-$LLVMVER.src
+	bsdtar -xvf llvm-$LLVMVER.src 
+	cd llvm-$LLVMVER.src
+	cp -av "$SRCDIR"/libunwind-$LLVMVER.src projects/libunwind
+	cp -av "$SRCDIR"/libcxx-$LLVMVER.src projects/libcxx
+	cp -av "$SRCDIR"/libcxxabi-$LLVMVER.src projects/libcxxabi
 	mkdir -p build
 	cd build
-	cmake "$SRCDIR/libunwind-$LLVMVER.src" \
+	cmake "$SRCDIR/llvm-$LLVMVER.src" \
 		-DCMAKE_INSTALL_PREFIX=/usr \
 		-DCMAKE_BUILD_TYPE=Release \
 		-DCMAKE_C_COMPILER_TARGET="$XTARGET" \
@@ -284,11 +293,21 @@ main() {
 		-DCMAKE_RANLIB="$TOOLS/bin/$XTARGET-ranlib" \
 		-DCMAKE_TRY_COMPILE_TARGET_TYPE=STATIC_LIBRARY \
 		-DLLVM_CONFIG_PATH="$TOOLS/bin/llvm-config" \
+		-DLIBCXX_CXX_ABI=libcxxabi \
+		-DLIBCXX_ENABLE_STATIC_ABI_LIBRARY=ON \
+		-DLIBCXX_HAS_MUSL_LIBC=ON \
+		-DLIBCXX_USE_COMPILER_RT=ON \
+		-DLIBCXXABI_USE_LLVM_UNWINDER=ON \
+		-DLIBCXXABI_USE_COMPILER_RT=ON \
 		-DLIBUNWIND_USE_COMPILER_RT=ON \
-		-DLIBUNWIND_TARGET_TRIPLE="$XTARGET" \
+		-DLLVM_DEFAULT_TARGET_TRIPLE=$XTARGET \
+		-DLLVM_TARGETS_TO_BUILD=$LTARGET \
 		-Wno-dev -G Ninja
-	ninja
-	DESTDIR="$SYSROOT" ninja install
+
+	sed -i 's/-latomic//g' build.ninja
+
+	ninja unwind cxxabi cxx -j$(nproc)
+	DESTDIR="$SYSROOT" ninja install-unwind install-cxxabi install-cxx -j$(nproc)
 }
 
 main "$1"
