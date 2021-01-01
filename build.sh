@@ -277,11 +277,18 @@ main() {
 	make -j$(nproc)
 	make DESTDIR="$SYSROOT" install -j$(nproc)
 
-	cd "$SRCDIR/llvm-$LLVMVER.src"
+	pushd "$SRCDIR"
+		for i in libunwind libcxx libcxxabi; do
+			ln -svf $i-$LLVMVER.src $i
+		done
+	popd
+
+	cd "$SRCDIR"/llvm-$LLVMVER.src
 	rm -rf build
 	mkdir -p build
 	cd build
 	cmake "$SRCDIR/llvm-$LLVMVER.src" \
+		-DCMAKE_CROSSCOMPILING=ON \
 		-DCMAKE_INSTALL_PREFIX=/usr \
 		-DCMAKE_BUILD_TYPE=Release \
 		-DCMAKE_C_COMPILER_TARGET="$XTARGET" \
@@ -290,7 +297,6 @@ main() {
 		-DCMAKE_CXX_COMPILER="$TOOLS/bin/$XTARGET-clang++" \
 		-DCMAKE_AR="$TOOLS/bin/$XTARGET-ar" \
 		-DCMAKE_NM="$TOOLS/bin/$XTARGET-nm" \
-		-DCMAKE_RANLIB="$TOOLS/bin/$XTARGET-ranlib" \
 		-DCMAKE_TRY_COMPILE_TARGET_TYPE=STATIC_LIBRARY \
 		-DLLVM_CONFIG_PATH="$TOOLS/bin/llvm-config" \
 		-DLIBCXX_CXX_ABI=libcxxabi \
@@ -301,6 +307,7 @@ main() {
 		-DLIBCXXABI_USE_COMPILER_RT=ON \
 		-DLIBUNWIND_USE_COMPILER_RT=ON \
 		-DLLVM_DEFAULT_TARGET_TRIPLE=$XTARGET \
+		-DLLVM_ENABLE_PROJECTS="libunwind;libcxx;libcxxabi" \
 		-DLLVM_TARGETS_TO_BUILD=$LTARGET \
 		-Wno-dev -G Ninja
 
