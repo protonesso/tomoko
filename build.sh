@@ -277,13 +277,8 @@ main() {
 	make -j$(nproc)
 	make DESTDIR="$SYSROOT" install -j$(nproc)
 
-	cd "$SRCDIR"
-	rm -rvf llvm-$LLVMVER.src
-	bsdtar -xvf llvm-$LLVMVER.src 
-	cd llvm-$LLVMVER.src
-	cp -av "$SRCDIR"/libunwind-$LLVMVER.src projects/libunwind
-	cp -av "$SRCDIR"/libcxx-$LLVMVER.src projects/libcxx
-	cp -av "$SRCDIR"/libcxxabi-$LLVMVER.src projects/libcxxabi
+	cd "$SRCDIR/llvm-$LLVMVER.src"
+	rm -rf build
 	mkdir -p build
 	cd build
 	cmake "$SRCDIR/llvm-$LLVMVER.src" \
