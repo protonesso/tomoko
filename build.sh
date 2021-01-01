@@ -4,21 +4,6 @@
 set -e
 
 main() {
-	export MUSLVER="1.2.1"
-	export LLVMVER="11.0.0"
-	export LINUXVER="5.10"
-
-	export LANG=C
-	export LC_ALL=C
-	export HOSTCC=clang
-	export HOSTCXX=clang++
-	export STUFF="$PWD/stuff"
-	export BUILD="$PWD/build"
-	export SRCDIR="$BUILD/src"
-	export TOOLS="$BUILD/tools"
-	export SYSROOT="$BUILD/sysroot"
-	export PATH="$TOOLS/bin:$PATH"
-
 	case "$1" in
 		x86_64)
 			export XTARGET="x86_64-linux-musl"
@@ -42,23 +27,16 @@ main() {
 			export KARCH="arm64"
 			;;
 		armv7l)
-			export XTARGET="armv7-linux-musleabihf"
+			export XTARGET="armv7l-linux-musleabihf"
 			export LTARGET="ARM"
 			export LARCH="armv7"
 			export MARCH="arm"
 			export KARCH="arm"
 			;;
-		armhf)
-			export XTARGET="armhf-linux-musleabihf"
+		armv6l)
+			export XTARGET="armv6l-linux-musleabihf"
 			export LTARGET="ARM"
 			export LARCH="armv6"
-			export MARCH="arm"
-			export KARCH="arm"
-			;;
-		arm)
-			export XTARGET="arm-linux-musleabi"
-			export LTARGET="ARM"
-			export LARCH="armv5te"
 			export MARCH="arm"
 			export KARCH="arm"
 			;;
@@ -118,6 +96,22 @@ main() {
 			;;
 	esac
 
+	export MUSLVER="1.2.1"
+	export LLVMVER="11.0.0"
+	export LINUXVER="5.10"
+	export FORTIHVER="1.1"
+
+	export LANG=C
+	export LC_ALL=C
+	export HOSTCC=clang
+	export HOSTCXX=clang++
+	export STUFF="$PWD/stuff"
+	export BUILD="$PWD/build"
+	export SRCDIR="$BUILD/src"
+	export TOOLS="$BUILD/tools"
+	export SYSROOT="$BUILD/sysroot"
+	export PATH="$TOOLS/bin:$PATH"
+
 	rm -rvf "$BUILD"
 	mkdir -pv "$SRCDIR" "$TOOLS" "$SYSROOT"
 
@@ -137,6 +131,7 @@ main() {
 	pushd "$SRCDIR/clang-$LLVMVER.src"
 		patch -Np1 -i "$STUFF"/clang/0001-add-support-for-Ataraxia-Linux.patch
 		patch -Np1 -i "$STUFF"/clang/0002-PowerPC64-ELFv2-fixes.patch
+		patch -Np1 -i "$STUFF"/clang/0003-Add-fortify-headers-paths.patch
 	popd
 	pushd "$SRCDIR/lld-$LLVMVER.src"
 		patch -Np1 -i "$STUFF"/lld/0001-RISCV-linker-relaxation-support.patch
@@ -144,16 +139,12 @@ main() {
 	pushd "$SRCDIR/compiler-rt-$LLVMVER.src"
 		patch -Np1 -i "$STUFF"/compiler-rt/0001-port-crt-on-MIPS-build-on-PowerPC.patch
 	popd
-	pushd "$SRCDIR/libcxx-$LLVMVER.src"
-		patch -Np1 -i "$STUFF"/libcxx/libcxx-01-musl-hardfix.patch
-	popd
-	pushd "$SRCDIR/libcxxabi-$LLVMVER.src"
-		patch -Np1 -i "$STUFF"/libcxxabi/libcxxabi_musl_exit.patch
-	popd
 
 	curl -C - -L --retry 3 --retry-delay 3 -O https://musl.libc.org/releases/musl-$MUSLVER.tar.gz
 	bsdtar -xvf musl-$MUSLVER.tar.gz
 
+	#curl -C - -L --retry 3 --retry-delay 3 -O https://github.com/ataraxialinux/fortify-headers/archive/$FORTIHVER.tar.gz
+	#bsdtar -xvf $FORTIHVER.tar.gz
 
 	cd "$SRCDIR"/linux-$LINUXVER
 	make mrproper -j$(nproc)
@@ -166,6 +157,9 @@ main() {
 	cp -a usr/include/* "$SYSROOT"/usr/include
 
 	find "$SYSROOT" \( -name .install -o -name ..install.cmd \) -print0 | xargs -0 rm -rf
+
+	#cd "$SRCDIR"/fortify-headers-$FORTIHVER
+	#make DESTDIR="$SYSROOT" PREFIX=/usr install
 
 	cd "$SRCDIR"/llvm-$LLVMVER.src
 	cp -av "$SRCDIR"/clang-$LLVMVER.src tools/clang
@@ -191,11 +185,6 @@ main() {
 		-DCLANG_INCLUDE_TESTS=OFF \
 		-DCLANG_PLUGIN_SUPPORT=ON \
 		-DCLANG_VENDOR=Ataraxia \
-		-DCOMPILER_RT_BUILD_BUILTINS=ON \
-		-DCOMPILER_RT_BUILD_LIBFUZZER=OFF \
-		-DCOMPILER_RT_BUILD_PROFILE=OFF \
-		-DCOMPILER_RT_BUILD_SANITIZERS=OFF \
-		-DCOMPILER_RT_BUILD_XRAY=OFF \
 		-DLIBCXX_CXX_ABI=libcxxabi \
 		-DLIBCXX_ENABLE_STATIC_ABI_LIBRARY=ON \
 		-DLIBCXX_USE_COMPILER_RT=ON \
@@ -220,7 +209,7 @@ main() {
 			cp -v $realclang $XTARGET-$i
 		done
 
-		for i in ar dwp nm objcopy objdump size strings; do
+		for i in ar as dwp nm objcopy objdump size strings; do
 			cp -v llvm-$i $XTARGET-$i
 		done
 
@@ -228,6 +217,7 @@ main() {
 		cp -v lld $XTARGET-ld.lld
 		cp -v llvm-symbolizer $XTARGET-addr2line
 		cp -v llvm-cxxfilt $XTARGET-c++filt
+		cp -v llvm-cov $XTARGET-gcov
 		cp -v llvm-ar $XTARGET-ranlib
 		cp -v llvm-readobj $XTARGET-readelf
 		cp -v llvm-objcopy $XTARGET-strip
