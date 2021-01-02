@@ -27,14 +27,14 @@ main() {
 			export KARCH="arm64"
 			;;
 		armv7l)
-			export XTARGET="armv7l-linux-musleabihf"
+			export XTARGET="armv7a-linux-musleabihf"
 			export LTARGET="ARM"
 			export LARCH="armv7"
 			export MARCH="arm"
 			export KARCH="arm"
 			;;
 		armv6l)
-			export XTARGET="armv6l-linux-musleabihf"
+			export XTARGET="armv6a-linux-musleabihf"
 			export LTARGET="ARM"
 			export LARCH="armv6"
 			export MARCH="arm"
