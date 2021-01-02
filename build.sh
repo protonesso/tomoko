@@ -27,14 +27,14 @@ main() {
 			export KARCH="arm64"
 			;;
 		armv7l)
-			export XTARGET="armv7a-linux-musleabihf"
+			export XTARGET="armv7l-linux-musleabihf"
 			export LTARGET="ARM"
 			export LARCH="armv7"
 			export MARCH="arm"
 			export KARCH="arm"
 			;;
 		armv6l)
-			export XTARGET="armv6a-linux-musleabihf"
+			export XTARGET="armv6l-linux-musleabihf"
 			export LTARGET="ARM"
 			export LARCH="armv6"
 			export MARCH="arm"
@@ -218,11 +218,8 @@ main() {
 			cp -v llvm-$i $XTARGET-$i
 		done
 
-		if [ "$1" != "riscv64" ]; then
-			cp -v lld $XTARGET-ld
-			cp -v lld $XTARGET-ld.lld
-		fi
-
+		cp -v lld $XTARGET-ld
+		cp -v lld $XTARGET-ld.lld
 		cp -v llvm-symbolizer $XTARGET-addr2line
 		cp -v llvm-cxxfilt $XTARGET-c++filt
 		cp -v llvm-cov $XTARGET-gcov
