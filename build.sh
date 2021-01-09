@@ -40,6 +40,13 @@ main() {
 			export MARCH="arm"
 			export KARCH="arm"
 			;;
+		armv5te)
+			export XTARGET="arm-linux-musleabi"
+			export LTARGET="ARM"
+			export LARCH="armv5"
+			export MARCH="arm"
+			export KARCH="arm"
+			;;
 		mips64)
 			export XTARGET="mips64-linux-musl"
 			export LTARGET="Mips"
@@ -97,7 +104,7 @@ main() {
 	esac
 
 	export MUSLVER="1.2.1"
-	export LLVMVER="11.0.0"
+	export LLVMVER="11.0.1"
 	export LINUXVER="5.10"
 	export FORTIHVER="1.1"
 
