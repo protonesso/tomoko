@@ -106,7 +106,7 @@ main() {
 	export MUSLVER="1.2.2"
 	export LLVMVER="11.0.1"
 	export LINUXVER="5.10"
-	export FORTIHVER="1.1"
+	export FORTIHVER="1.2"
 
 	export LANG=C
 	export LC_ALL=C
@@ -177,8 +177,8 @@ main() {
 
 	find "$SYSROOT" \( -name .install -o -name ..install.cmd \) -print0 | xargs -0 rm -rf
 
-	#cd "$SRCDIR"/fortify-headers-$FORTIHVER
-	#make DESTDIR="$SYSROOT" PREFIX=/usr install
+	cd "$SRCDIR"/fortify-headers-$FORTIHVER
+	make DESTDIR="$SYSROOT" PREFIX=/usr install
 
 	cd "$SRCDIR"/llvm-$LLVMVER.src
 	cp -av "$SRCDIR"/clang-$LLVMVER.src tools/clang
