@@ -103,7 +103,7 @@ main() {
 			;;
 	esac
 
-	export MUSLVER="1.2.1"
+	export MUSLVER="1.2.2"
 	export LLVMVER="11.0.1"
 	export LINUXVER="5.10"
 	export FORTIHVER="1.1"
@@ -111,8 +111,11 @@ main() {
 	export LANG=C
 	export LC_ALL=C
 
-	export HOSTCC=clang
-	export HOSTCXX=clang++
+	export BCC="${BCC:-clang}"
+	export BCXX="${BCXX:-clang++}"
+
+	export HOSTCC="$BCC"
+	export HOSTCXX="$BCXX"
 
 	export STUFF="$PWD/stuff"
 	export BUILD="$PWD/build"
@@ -144,19 +147,23 @@ main() {
 	popd
 	pushd "$SRCDIR/compiler-rt-$LLVMVER.src"
 		patch -Np1 -i "$STUFF"/compiler-rt/0001-port-crt-on-MIPS-build-on-PowerPC.patch
+		patch -Np1 -i "$STUFF"/compiler-rt/0001-Make-sanitizers-work-on-musl-libc.patch
+		patch -Np1 -i "$STUFF"/compiler-rt/0002-get-rid-of-execinfo.patch
 	popd
 	pushd "$SRCDIR/libcxxabi-$LLVMVER.src"
-		patch -Np1 -i "$STUFF"/libcxxabi/musl.patch
+		patch -Np1 -i "$STUFF"/libcxxabi/0001-don-t-link-against-__cxa_thread_atexit_impl.patch
+		patch -Np1 -i "$STUFF"/libcxxabi/0002-force-link-against-compiler-rt-builtins.patch
 	popd
 	pushd "$SRCDIR/libcxx-$LLVMVER.src"
-		patch -Np1 -i "$STUFF"/libcxx/musl.patch
+		patch -Np1 -i "$STUFF"/libcxx/0001-fix-musl-locale.patch
+		patch -Np1 -i "$STUFF"/libcxx/0002-force-link-against-compiler-rt-builtins.patch
 	popd
 
 	curl -C - -L --retry 3 --retry-delay 3 -O https://musl.libc.org/releases/musl-$MUSLVER.tar.gz
 	bsdtar -xvf musl-$MUSLVER.tar.gz
 
-	#curl -C - -L --retry 3 --retry-delay 3 -O https://github.com/ataraxialinux/fortify-headers/archive/$FORTIHVER.tar.gz
-	#bsdtar -xvf $FORTIHVER.tar.gz
+	curl -C - -L --retry 3 --retry-delay 3 -O https://github.com/ataraxialinux/fortify-headers/archive/$FORTIHVER.tar.gz
+	bsdtar -xvf $FORTIHVER.tar.gz
 
 	cd "$SRCDIR"/linux-$LINUXVER
 	make mrproper -j$(nproc)
@@ -184,8 +191,8 @@ main() {
 	mkdir -p build
 	cd build
 	cmake "$SRCDIR/llvm-$LLVMVER.src" \
-		-DCMAKE_C_COMPILER=clang \
-		-DCMAKE_CXX_COMPILER=clang++ \
+		-DCMAKE_C_COMPILER=$BCC \
+		-DCMAKE_CXX_COMPILER=$BCXX \
 		-DCMAKE_INSTALL_PREFIX="$TOOLS" \
 		-DCMAKE_BUILD_TYPE=Release \
 		-DCLANG_BUILD_EXAMPLES=OFF \
@@ -267,6 +274,30 @@ main() {
 	for i in lib/linux/*; do
 		install -Dm644 "$i" "$TOOLS"/lib/clang/$LLVMVER/lib/linux/$(basename $i)
 	done
+
+	if [ "$LTARGET" == "X86" ]; then
+		cd "$SRCDIR"
+		mkdir -p compiler-rt-sanitizers-build
+		cd compiler-rt-sanitizers-build
+		cmake "$SRCDIR"/compiler-rt-$LLVMVER.src \
+			-DCMAKE_C_COMPILER_TARGET="$XTARGET" \
+			-DCMAKE_ASM_COMPILER_TARGET="$XTARGET" \
+			-DCMAKE_C_COMPILER="$TOOLS/bin/$XTARGET-clang" \
+			-DCMAKE_CXX_COMPILER="$TOOLS/bin/$XTARGET-clang++" \
+			-DCMAKE_AR="$TOOLS/bin/$XTARGET-ar" \
+			-DCMAKE_NM="$TOOLS/bin/$XTARGET-nm" \
+			-DCMAKE_RANLIB="$TOOLS/bin/$XTARGET-ranlib" \
+			-DCMAKE_TRY_COMPILE_TARGET_TYPE=STATIC_LIBRARY \
+			-DLLVM_CONFIG_PATH="$TOOLS/bin/llvm-config" \
+			-DCOMPILER_RT_DEFAULT_TARGET_ONLY=ON \
+			-DCOMPILER_RT_STANDALONE_BUILD=ON \
+			-Wno-dev -G Ninja
+		ninja cfi safestack -j$(nproc)
+
+		for i in lib/linux/*; do
+			install -Dm644 "$i" "$TOOLS"/lib/clang/$LLVMVER/lib/linux/$(basename $i)
+		done
+	fi
 
 	cd "$SRCDIR"/musl-$MUSLVER
 	./configure \

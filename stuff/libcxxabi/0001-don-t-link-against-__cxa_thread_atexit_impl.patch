@@ -1,8 +1,18 @@
+From 3019a1285d2b8052228a845dab94b907491068d9 Mon Sep 17 00:00:00 2001
+From: Ishimoto Shinobu <nagakamira@gmail.com>
+Date: Fri, 15 Jan 2021 19:12:43 +0900
+Subject: [PATCH 1/2] don't link against __cxa_thread_atexit_impl
+
+Signed-off-by: Ishimoto Shinobu <nagakamira@gmail.com>
+---
+ cmake/config-ix.cmake | 2 --
+ 1 file changed, 2 deletions(-)
+
 diff --git a/cmake/config-ix.cmake b/cmake/config-ix.cmake
-index 8892964..2768728 100644
+index 15b5208..2bce4f1 100644
 --- a/cmake/config-ix.cmake
 +++ b/cmake/config-ix.cmake
-@@ -80,7 +80,5 @@ if(FUCHSIA)
+@@ -84,7 +84,5 @@ if(FUCHSIA)
  else()
    check_library_exists(dl dladdr "" LIBCXXABI_HAS_DL_LIB)
    check_library_exists(pthread pthread_once "" LIBCXXABI_HAS_PTHREAD_LIB)
@@ -10,3 +20,6 @@ index 8892964..2768728 100644
 -    LIBCXXABI_HAS_CXA_THREAD_ATEXIT_IMPL)
    check_library_exists(System write "" LIBCXXABI_HAS_SYSTEM_LIB)
  endif()
+-- 
+2.29.2
+
