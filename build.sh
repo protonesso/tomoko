@@ -146,9 +146,9 @@ main() {
 		patch -Np1 -i "$STUFF"/clang/0003-Add-fortify-headers-paths.patch
 	popd
 	pushd "$SRCDIR/compiler-rt-$LLVMVER.src"
-		patch -Np1 -i "$STUFF"/compiler-rt/0001-port-crt-on-MIPS-build-on-PowerPC.patch
 		patch -Np1 -i "$STUFF"/compiler-rt/0001-Make-sanitizers-work-on-musl-libc.patch
 		patch -Np1 -i "$STUFF"/compiler-rt/0002-get-rid-of-execinfo.patch
+		patch -Np1 -i "$STUFF"/compiler-rt/0003-port-crt-on-MIPS-build-on-PowerPC.patch
 	popd
 	pushd "$SRCDIR/libcxxabi-$LLVMVER.src"
 		patch -Np1 -i "$STUFF"/libcxxabi/0001-don-t-link-against-__cxa_thread_atexit_impl.patch

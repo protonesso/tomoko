@@ -1,7 +1,7 @@
-From 389eec2dadaa92b203c0442a1d7c33d8b21603cf Mon Sep 17 00:00:00 2001
+From 47176a86ae32254d168ae540d34500b383ecaf0c Mon Sep 17 00:00:00 2001
 From: Ishimoto Shinobu <nagakamira@gmail.com>
-Date: Thu, 31 Dec 2020 07:52:45 +0900
-Subject: [PATCH] port crt on MIPS, build on PowerPC
+Date: Sun, 17 Jan 2021 00:46:51 +0900
+Subject: [PATCH 3/3] port crt on MIPS, build on PowerPC
 
 Signed-off-by: Ishimoto Shinobu <nagakamira@gmail.com>
 ---
@@ -10,7 +10,7 @@ Signed-off-by: Ishimoto Shinobu <nagakamira@gmail.com>
  2 files changed, 9 insertions(+), 1 deletion(-)
 
 diff --git a/cmake/config-ix.cmake b/cmake/config-ix.cmake
-index 2edc1da..9740ff2 100644
+index 2edc1da..5f67743 100644
 --- a/cmake/config-ix.cmake
 +++ b/cmake/config-ix.cmake
 @@ -280,7 +280,7 @@ set(ALL_SANITIZER_COMMON_SUPPORTED_ARCH ${X86} ${X86_64} ${PPC64} ${RISCV64}
